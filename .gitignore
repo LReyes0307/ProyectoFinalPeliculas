@@ -1,0 +1,34 @@
+# Visual Studio
+.vs/
+.idea/
+*.suo
+*.user
+
+# Compilacion .NET
+bin/
+obj/
+
+# Node y Vite
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Variables y configuracion local
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+
+# Base SQLite local
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+
+# Pruebas HTTP locales y logs
+*.http
+*.log
+
+# Sistema
+.DS_Store

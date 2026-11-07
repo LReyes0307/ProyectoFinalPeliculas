@@ -2,33 +2,62 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using ProyectoFinalPPE.Data;
 using ProyectoFinalPPE.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Servicios de la aplicaciÛn registrados en el contenedor de inyecciÛn
-// de dependencias. Todo lo que se registra aquÌ se puede "inyectar"
+// Servicios de la aplicaci√≥n registrados en el contenedor de inyecci√≥n
+// de dependencias. Todo lo que se registra aqu√≠ se puede "inyectar"
 // en los constructores de controladores y servicios.
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    // Esquema Bearer en el documento OpenAPI: habilita el bot√≥n "Authorize"
+    // en Swagger UI para probar los endpoints protegidos con el token que
+    // devuelve POST /auth/login.
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Pega aqu√≠ el token que devuelve POST /auth/login (sin la palabra Bearer)."
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
-// Entity Framework Core con SQLite: la cadena de conexiÛn indica el
+// Entity Framework Core con SQLite: la cadena de conexi√≥n indica el
 // archivo de base de datos (peliculas.db). SQLite es portable, no hace
-// falta instalar ning˙n servidor, asÌ corre en cualquier computador.
+// falta instalar ning√∫n servidor, as√≠ corre en cualquier computador.
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Los servicios con la lÛgica de negocio, registrados por inyecciÛn
-// de dependencias: ASP.NET Core crea una instancia por peticiÛn y la
+// Los servicios con la l√≥gica de negocio, registrados por inyecci√≥n
+// de dependencias: ASP.NET Core crea una instancia por petici√≥n y la
 // entrega a los controladores que la piden en su constructor.
 builder.Services.AddScoped<PeliculasService>();
 builder.Services.AddScoped<AuthService>();
 
-// AutenticaciÛn con JWT Bearer: asÌ el servidor valida el token que el
-// cliente envÌa en el encabezado "Authorization: Bearer <token>".
+// Autenticaci√≥n con JWT Bearer: as√≠ el servidor valida el token que el
+// cliente env√≠a en el encabezado "Authorization: Bearer <token>".
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -50,7 +79,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // CORS: la API solo acepta peticiones del origen del cliente Vue
-// (http://localhost:5173), igual que hacÌa el backend de NestJS.
+// (http://localhost:5173), igual que hac√≠a el backend de NestJS.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("vue", policy =>
@@ -69,15 +98,17 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// CORS va antes de la autenticaciÛn: primero se acepta el origen,
+// CORS va antes de la autenticaci√≥n: primero se acepta el origen,
 // luego se valida el token.
 app.UseCors("vue");
 
 // El orden importa: primero UseAuthentication (lee y valida el token)
-// y despuÈs UseAuthorization (decide si puede pasar).
+// y despu√©s UseAuthorization (decide si puede pasar).
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+// WithOpenApi (paquete Microsoft.AspNetCore.OpenApi) marca las operaciones
+// de los controladores en el documento OpenAPI.
+app.MapControllers().WithOpenApi();
 
 app.Run();

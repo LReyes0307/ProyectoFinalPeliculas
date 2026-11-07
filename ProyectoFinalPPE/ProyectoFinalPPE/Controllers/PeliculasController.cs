@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ProyectoFinalPPE.Dtos;
 using ProyectoFinalPPE.Services;
 
@@ -41,6 +42,7 @@ public class PeliculasController : ControllerBase
         return Ok(pelicula);
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> Create(CreatePeliculaDto dto)
     {
@@ -55,6 +57,7 @@ public class PeliculasController : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpPatch("{id}")]
     public async Task<IActionResult> Update(int id, UpdatePeliculaDto dto)
     {
@@ -73,6 +76,7 @@ public class PeliculasController : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

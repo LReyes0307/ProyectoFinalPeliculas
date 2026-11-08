@@ -1,10 +1,11 @@
 using System.Text;
+using ProyectoFinalPPE;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using ProyectoFinalPPE.Data;
 using ProyectoFinalPPE.Services;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,35 +14,9 @@ var builder = WebApplication.CreateBuilder(args);
 // en los constructores de controladores y servicios.
 builder.Services.AddControllers();
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddOpenApi(options =>
 {
-    // Esquema Bearer en el documento OpenAPI: habilita el botón "Authorize"
-    // en Swagger UI para probar los endpoints protegidos con el token que
-    // devuelve POST /auth/login.
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Pega aquí el token que devuelve POST /auth/login (sin la palabra Bearer)."
-    });
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
 });
 
 // Entity Framework Core con SQLite: la cadena de conexión indica el
@@ -92,8 +67,8 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();               // documento en /openapi/v1.json
+    app.MapScalarApiReference();    // interfaz interactiva en /scalar/v1
 }
 
 app.UseHttpsRedirection();
@@ -109,6 +84,6 @@ app.UseAuthorization();
 
 // WithOpenApi (paquete Microsoft.AspNetCore.OpenApi) marca las operaciones
 // de los controladores en el documento OpenAPI.
-app.MapControllers().WithOpenApi();
+app.MapControllers();
 
 app.Run();
